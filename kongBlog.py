@@ -1,23 +1,14 @@
 # pyinstaller -F D:\aRooba\documents\code\网络脚本\kongBlog\kongBlog.py --icon ..\icon.ico
-
-import encodings.idna
-global pageNum
-global startFrom
-# global proxy_list
-pageNum = [0, 0, 0, 0, 0, 0]
-startFrom = [0, 0, 0, 0, 0, 0]
-# proxy_list = []
+import requests
+import traceback
+import threading
+import time
+from bs4 import BeautifulSoup
 
 
-def getPassword():
-    import requests
-    import random
-    import traceback
-    global pageNum
-    global startFrom
+def getPassword(idx):
     # global proxy_list
     print(threading.current_thread().getName())
-    i = int(threading.current_thread().getName()[-1]) - 1
     while True:
         url = 'http://guga.angmiweb.net.cn/post/' + str(pageNum[i]) + '.html'
         # proxy = {'http': 'http://218.14.115.211:3128'}
@@ -73,6 +64,8 @@ def getPassword():
 
 
 if __name__ == '__main__':
+    pageNum = [0] * 6
+    startFrom = [0] * 6
     with open('D:\\aRooba\\documents\\code\\网络脚本\\kongBlog\\kongBlog_record.txt', 'r') as f:
         for i, line in zip(range(6), f.readlines()):
             pageNum[i] = int(line.split(':')[0])
@@ -83,20 +76,9 @@ if __name__ == '__main__':
     # with open('D:\\aRooba\\documents\\code\\网络脚本\\collection_ip.txt', 'r') as f:
     #     for line in f.readlines():
     #         proxy_list.append({'http://' + line.split(':')[0] : line.split(':')[0][:-1]})
-    import threading
-    a = threading.Thread(target=getPassword, name='Thread-1')
-    b = threading.Thread(target=getPassword, name='Thread-2')
-    c = threading.Thread(target=getPassword, name='Thread-3')
-    d = threading.Thread(target=getPassword, name='Thread-4')
-    e = threading.Thread(target=getPassword, name='Thread-5')
-    f = threading.Thread(target=getPassword, name='Thread-6')
-    a.start()
-    b.start()
-    c.start()
-    d.start()
-    e.start()
-    f.start()
-    import time
+    for i in range(6):
+        threading.Thread(target=getPassword, name='Thread-'+str(i+1), args=(i)).start()
+
     while True:
         time.sleep(60)
         with open('D:\\aRooba\\documents\\code\\网络脚本\\kongBlog\\kongBlog_record.txt', 'w') as f:
