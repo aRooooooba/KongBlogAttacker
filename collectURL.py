@@ -18,3 +18,4 @@ if __name__ == '__main__':
     print(urlList)
     with open('UrlCollection.txt', 'w') as f:
         f.write('\n'.join(urlList))
+        f.write('\n')

